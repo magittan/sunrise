@@ -77,9 +77,10 @@ class ReplayMemory():
         self.transitions = SegmentTree(capacity)  # Store transitions in a wrap-around cyclic buffer within a sum tree for querying priorities
 
     # Adds state and action at time t, reward and terminal at time t + 1
-    def append(self, state, action, reward, terminal):
+    def append(self, state, action, reward, terminal, mask=None):
+        if mask == None:
+            mask = torch.bernoulli(torch.Tensor([self.beta_mean]*self.num_ensemble))
         state = state[-1].mul(255).to(dtype=torch.uint8, device=torch.device('cpu'))  # Only store last frame and discretise to save memory
-        mask = torch.bernoulli(torch.Tensor([self.beta_mean]*self.num_ensemble))
         self.transitions.append(Transition(self.t, state, action, reward, not terminal, mask), self.transitions.max)  # Store new transition with maximum priority
         self.t = 0 if terminal else self.t + 1  # Start new episodes with t = 0
 
